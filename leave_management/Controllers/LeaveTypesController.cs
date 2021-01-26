@@ -1,4 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using AutoMapper;
+using leave_management.Contracts;
+using leave_management.Data;
+using leave_management.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -9,18 +13,31 @@ namespace leave_management.Controllers
 {
     public class LeaveTypesController : Controller
     {
-        private readonly ILeaveRepository _repo;
+        private readonly ILeaveTypeRepository _repo;
+        private readonly IMapper _mapper;
+
+        public LeaveTypesController(ILeaveTypeRepository repo, IMapper mapper)
+        {
+            _repo = repo;
+            _mapper = mapper;
+        }
 
         // GET: LeaveTypesController
         public ActionResult Index()
         {
-            return View();
+            var leavetype = _repo.FindAll().ToList();
+            var model = _mapper.Map<List<LeaveType>, List<LeaveTypeVM>>(leavetype);
+            return View(model);
         }
 
         // GET: LeaveTypesController/Details/5
         public ActionResult Details(int id)
         {
-            return View();
+            
+            var leaveType = _repo.FindById(id);
+            var model = _mapper.Map<LeaveTypeVM>(leaveType);
+
+            return View(model);
         }
 
         // GET: LeaveTypesController/Create
@@ -32,14 +49,27 @@ namespace leave_management.Controllers
         // POST: LeaveTypesController/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
+        public ActionResult Create(LeaveTypeVM model)
         {
             try
             {
+                if (!ModelState.IsValid)
+                {
+                    return View(model);
+                }
+                var leavetype = _mapper.Map<LeaveType>(model);
+                leavetype.DateCreated = DateTime.Now;
+                var isSuccess = _repo.Create(leavetype);
+                if (!isSuccess)
+                {
+                    ModelState.AddModelError("","Something went wrong....");
+                    return View(model);
+                }
                 return RedirectToAction(nameof(Index));
             }
             catch
             {
+                ModelState.AddModelError("", "Something went wrong....");
                 return View();
             }
         }
@@ -47,16 +77,31 @@ namespace leave_management.Controllers
         // GET: LeaveTypesController/Edit/5
         public ActionResult Edit(int id)
         {
-            return View();
+            var leaveType = _repo.FindById(id);
+            var model = _mapper.Map<LeaveTypeVM>(leaveType);
+            
+            return View(model);
         }
 
         // POST: LeaveTypesController/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, IFormCollection collection)
+        public ActionResult Edit( LeaveTypeVM model)
         {
             try
             {
+                if (!ModelState.IsValid)
+                {
+                    return View(model);
+                }
+                var leavetype = _mapper.Map<LeaveType>(model);
+               // leavetype.DateCreated = DateTime.Now;
+                var isSuccess = _repo.Update(leavetype);
+                if (!isSuccess)
+                {
+                    ModelState.AddModelError("", "Something went wrong....");
+                    return View(model);
+                }
                 return RedirectToAction(nameof(Index));
             }
             catch
@@ -68,21 +113,34 @@ namespace leave_management.Controllers
         // GET: LeaveTypesController/Delete/5
         public ActionResult Delete(int id)
         {
-            return View();
+            var leavetype = _repo.FindById(id);
+            if (leavetype == null)
+            {
+                return NotFound();
+            }
+            var isSuccess = _repo.Delete(leavetype);
+            if (!isSuccess)
+            {
+                return BadRequest();
+            }
+            return RedirectToAction(nameof(Index));
+            
+            
         }
 
         // POST: LeaveTypesController/Delete/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Delete(int id, IFormCollection collection)
+        public ActionResult Delete(int id, LeaveTypeVM model)
         {
             try
             {
+               
                 return RedirectToAction(nameof(Index));
             }
             catch
             {
-                return View();
+                return View(model);
             }
         }
     }
