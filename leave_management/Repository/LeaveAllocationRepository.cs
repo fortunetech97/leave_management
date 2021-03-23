@@ -1,5 +1,6 @@
 ﻿using leave_management.Contracts;
 using leave_management.Data;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,6 +15,13 @@ namespace leave_management.Repository
         {
             _db = db;
         }
+
+        public bool CheckAllocation(int leavetypeid, string employeeid)
+        {
+            var period = DateTime.Now.Year;
+            return FindAll().Where(a => a.EmployeeId == employeeid && a.LeaveTypeId == leavetypeid && a.Period == period).Any();
+        }
+
         public bool Create(Data.LeaveAllocation entity)
         {
             _db.LeaveAllocation.Add(entity);
@@ -28,14 +36,42 @@ namespace leave_management.Repository
 
         public ICollection<Data.LeaveAllocation> FindAll()
         {
-            var leaveAllocation = _db.LeaveAllocation.ToList();
+            var leaveAllocation = _db.LeaveAllocation
+                .Include(q => q.LeaveType)
+                .Include(q => q.Employee)
+                .ToList();
             return leaveAllocation;
         }
 
         public Data.LeaveAllocation FindById(int id)
         {
-            var leaveAllocation = _db.LeaveAllocation.Find(id);
+            var leaveAllocation = _db.LeaveAllocation
+                .Include(q=> q.LeaveType)
+                .Include(q=>q.Employee)
+                .FirstOrDefault(q=> q.Id == id);
             return leaveAllocation;
+        }
+
+        public ICollection<LeaveAllocation> GetLeaveAllocationsByEmployee(string id)
+        {
+            var period = DateTime.Now.Year;
+            return FindAll()
+                     .Where(q => q.EmployeeId == id && q.Period == period )
+                     .ToList();
+        }
+
+        public LeaveAllocation GetLeaveAllocationsByEmployeeAndType(string id, int leavetypeId)
+        {
+            var period = DateTime.Now.Year;
+            return FindAll()
+                     .FirstOrDefault(q => q.EmployeeId == id && q.Period == period && q.LeaveTypeId == leavetypeId);
+        }
+
+        public bool isExists(int id)
+        {
+            var exists = _db.LeaveAllocation.Any(q => q.Id == id);
+            return exists;
+                
         }
 
         public bool Save()

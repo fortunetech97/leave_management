@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace leave_management.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "Administrator")]
     public class LeaveTypesController : Controller
     {
         private readonly ILeaveTypeRepository _repo;
